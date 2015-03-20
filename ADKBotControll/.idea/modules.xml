@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/ADKBotControll.iml" filepath="$PROJECT_DIR$/ADKBotControll.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/adkbotcontrol.iml" filepath="$PROJECT_DIR$/app/adkbotcontrol.iml" />
+      <module fileurl="file://$PROJECT_DIR$/adkbotcontrol/adkbotcontrol.iml" filepath="$PROJECT_DIR$/adkbotcontrol/adkbotcontrol.iml" />
       <module fileurl="file://$PROJECT_DIR$/adkbotcontrolclient/adkbotcontrolclient.iml" filepath="$PROJECT_DIR$/adkbotcontrolclient/adkbotcontrolclient.iml" />
     </modules>
   </component>

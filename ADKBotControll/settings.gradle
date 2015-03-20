@@ -1,1 +1,1 @@
-include ':app', ':adkbotcontrolclient'
+include ':adkbotcontrol', ':adkbotcontrolclient'

@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ADK Bot Control</string>
+
+    <string name="hello_world">Android 3Pi Control Server </string>
+    <string name="action_settings">Settings</string>
+    <string name="adkstatus">ADK:</string>
+    <string name="adkstatustextdef">Not Connected</string>
+    <string name="iptext">IP:</string>
+    <string name="connectionstext">Connections:</string>
+</resources>
