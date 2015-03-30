@@ -24,42 +24,15 @@ void loop()
 	byte err;
 	byte idle;
 	static byte count = 0;
-	byte msg[3];
-	long touchcount;
+	byte singleByte[1];
 
 	if (acc.isConnected()) {
-		int len = acc.read(msg, sizeof(msg), 1);
-		int i;
-		byte b;
-		uint16_t val;
-		int x, y;
-		char c0;
+		int len = acc.read(singleByte, 1, 1);
 
 		if (len > 0) {
-			// assumes only one command per packet
-			if (msg[0] == 0x2) {
-				if (msg[1] == 0x0)
-					analogWrite(LED1_RED, 255 - msg[2]);
-				else if (msg[1] == 0x1)
-					analogWrite(LED1_GREEN, 255 - msg[2]);
-				else if (msg[1] == 0x2)
-					analogWrite(LED1_BLUE, 255 - msg[2]);
-				else if (msg[1] == 0x3)
-					analogWrite(LED2_RED, 255 - msg[2]);
-				else if (msg[1] == 0x4)
-					analogWrite(LED2_GREEN, 255 - msg[2]);
-				else if (msg[1] == 0x5)
-					analogWrite(LED2_BLUE, 255 - msg[2]);
-				else if (msg[1] == 0x6)
-					analogWrite(LED3_RED, 255 - msg[2]);
-				else if (msg[1] == 0x7)
-					analogWrite(LED3_GREEN, 255 - msg[2]);
-				else if (msg[1] == 0x8)
-					analogWrite(LED3_BLUE, 255 - msg[2]);
-			}
+			acc.write(singleByte,1);
                 }
 	} 
-	delay(10);
 }
 
 

@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package thingswithworth.org.adkbotcontrol;
+package thingswithworth.org.adkbotcontrol.activities;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -37,10 +40,14 @@ import android.widget.SeekBar;
 import com.android.future.usb.UsbAccessory;
 import com.android.future.usb.UsbManager;
 
-public class ADKActivity extends Activity implements Runnable {
+import thingswithworth.org.adkbotcontrol.R;
+
+public abstract class ADKActivity extends Activity  {
     private static final String TAG = "ADK";
 
     private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
+    DataInputStream mInputStream;
+    DataOutputStream mOutputStream;
 
     private UsbManager mUsbManager;
     private PendingIntent mPermissionIntent;
@@ -48,11 +55,8 @@ public class ADKActivity extends Activity implements Runnable {
 
     UsbAccessory mAccessory;
     ParcelFileDescriptor mFileDescriptor;
-    FileInputStream mInputStream;
-    FileOutputStream mOutputStream;
 
     private static final int MESSAGE_SWITCH = 1;
-
 
     protected class SwitchMsg {
         private byte sw;
@@ -115,6 +119,7 @@ public class ADKActivity extends Activity implements Runnable {
         }
 
         setContentView(R.layout.activity_start);
+       // adkComm = new ADKCommRunnable();
     }
 
     @Override
@@ -171,10 +176,10 @@ public class ADKActivity extends Activity implements Runnable {
         if (mFileDescriptor != null) {
             mAccessory = accessory;
             FileDescriptor fd = mFileDescriptor.getFileDescriptor();
-            mInputStream = new FileInputStream(fd);
-            mOutputStream = new FileOutputStream(fd);
-            Thread thread = new Thread(null, this, "ADK");
-            thread.start();
+            mInputStream = new DataInputStream(new FileInputStream(fd));
+            mOutputStream = new DataOutputStream(new FileOutputStream(fd));
+           // Thread thread = new Thread(null, adkComm, "ADK");
+           // thread.start();
             Log.d(TAG, "accessory opened");
         } else {
             Log.d(TAG, "accessory open fail");
@@ -200,41 +205,6 @@ public class ADKActivity extends Activity implements Runnable {
         return val;
     }
 
-    public void run() {
-        int ret = 0;
-        byte[] buffer = new byte[16384];
-        int i;
-
-        while (ret >= 0) {
-            try {
-                ret = mInputStream.read(buffer);
-            } catch (IOException e) {
-                break;
-            }
-
-            i = 0;
-            while (i < ret) {
-                int len = ret - i;
-
-                switch (buffer[i]) {
-                    case 0x1:
-                        if (len >= 3) {
-                            Message m = Message.obtain(mHandler, MESSAGE_SWITCH);
-                            m.obj = new SwitchMsg(buffer[i + 1], buffer[i + 2]);
-                            mHandler.sendMessage(m);
-                        }
-                        i += 3;
-                        break;
-
-                    default:
-                        Log.d(TAG, "unknown msg: " + buffer[i]);
-                        i = len;
-                        break;
-                }
-            }
-
-        }
-    }
 
     Handler mHandler = new Handler() {
         @Override
@@ -248,17 +218,14 @@ public class ADKActivity extends Activity implements Runnable {
         }
     };
 
-    public void sendCommand(byte command, byte target, int value) {
-        byte[] buffer = new byte[3];
-        if (value > 255)
-            value = 255;
-
-        buffer[0] = command;
-        buffer[1] = target;
-        buffer[2] = (byte) value;
-        if (mOutputStream != null && buffer[1] != -1) {
+    public void sendDriveCommand(char drive, char speed) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream stream = new DataOutputStream(bytes);
+        stream.writeByte(drive);
+        stream.writeByte(speed);
+        if (mOutputStream != null) {
             try {
-                mOutputStream.write(buffer);
+                mOutputStream.write(bytes.toByteArray());
             } catch (IOException e) {
                 Log.e(TAG, "write failed", e);
             }

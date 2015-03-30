@@ -19,7 +19,7 @@
 #include <OrangutanLCD.h>
 #include <OrangutanPushbuttons.h>
 #include <OrangutanBuzzer.h>
-
+#include <SoftwareSerial.h>
 Pololu3pi robot;
 
 
@@ -38,6 +38,12 @@ const char demo_name_line2[] PROGMEM = "Control";
 // A couple of simple tunes, stored in program space.
 const char welcome[] PROGMEM = ">g32>>c32";
 const char go[] PROGMEM = "L16 cdegreg4";
+
+#define rxPin 0  // pin 3 connects to smcSerial TX  (not used in this example)
+#define txPin 1  // pin 4 connects to smcSerial RX
+SoftwareSerial smcSerial = SoftwareSerial(rxPin, txPin);
+char buffer[100];
+unsigned char read_index = 0;
 
 // Data for generating the characters used in load_custom_characters
 // and display_readings.  By reading levels[] starting at various
@@ -59,6 +65,14 @@ const char levels[] PROGMEM = {
   0b11111,
   0b11111
 };
+
+byte readByte()
+{
+  char c;
+  if(smcSerial.readBytes(&c, 1) == 0){ return -1; }
+  return (byte)c;
+}
+
 
 // This function loads custom characters into the LCD.  Up to 8
 // characters can be loaded; we use them for 7 levels of a bar graph.
@@ -121,11 +135,28 @@ void setup()
   OrangutanLCD::clear();
 
   OrangutanLCD::print("Go!");	
+  
+  smcSerial.begin(115200);
+   
+  OrangutanMotors::setSpeeds(0,0);
 }
+
 
 // The main function.  This function is repeatedly called by
 // the Arduino framework.
 void loop()
 {
-    OrangutanMotors::setSpeeds(0,0);
+   if (smcSerial.available()>2){
+      char command = (char) readByte();
+      byte speedByte = readByte();
+      if(command=='F'){
+          OrangutanMotors::setSpeeds(speedByte,speedByte);
+      }
+      if(command=='R'){
+          OrangutanMotors::setSpeeds(-speedByte,speedByte);
+      }
+      if(command=='L'){
+          OrangutanMotors::setSpeeds(speedByte,-speedByte);
+      }
+   }
 }

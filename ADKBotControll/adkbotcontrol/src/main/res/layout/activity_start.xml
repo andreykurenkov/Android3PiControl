@@ -7,7 +7,8 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
+        android:layout_height="fill_parent"
+        android:showDividers="none">
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="fill_parent"
@@ -18,14 +19,16 @@
                 android:layout_height="wrap_content"
                 style="@style/text"
                 android:layout_gravity="left"
-                android:id="@+id/iptext" />
+                android:id="@+id/ip_text" />
 
             <TextView
                 android:text=" 0.000.000.0 "
                 style="@style/text"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right" />
+                android:layout_gravity="right"
+                android:id="@+id/ip_text_content"
+                android:gravity="right" />
         </LinearLayout>
 
         <LinearLayout
@@ -35,26 +38,33 @@
 
             <TextView android:text="@string/connectionstext"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="fill_parent"
                 style="@style/text"
                 android:layout_gravity="left"
-                android:id="@+id/connectionstext"/>
+                android:id="@+id/connections_text"
+                android:layout_weight="0.5"
+                android:gravity="center_vertical"/>
 
             <CheckedTextView
                 android:text="ADK"
                 style="@style/text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right"
+                android:layout_gravity="center_vertical|right"
                 android:checkMark="?android:attr/listChoiceIndicatorMultiple"
                 android:checked="false"
-                android:layout_marginRight="12dp"
-                android:layout_marginLeft="12dp" />
+                android:layout_marginRight="10dp"
+                android:layout_marginLeft="10dp"
+                android:gravity="center_vertical|center_horizontal"
+                android:layout_weight="0.2"
+                android:id="@+id/adk_checkbox"
+                android:singleLine="false" />
 
             <View
-                android:layout_width="1dp"
+                android:layout_width="0.1dp"
                 android:layout_height="fill_parent"
-                android:background="#FFFFFF"/>
+                android:background="#FFFFFF"
+                android:layout_weight="0.01"/>
 
             <CheckedTextView
                 android:text="Client"
@@ -64,8 +74,11 @@
                 android:layout_gravity="right"
                 android:checkMark="?android:attr/listChoiceIndicatorMultiple"
                 android:checked="false"
-                android:layout_marginLeft="12dp"
-                android:layout_marginRight="12dp" />
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:gravity="center_vertical|center_horizontal"
+                android:layout_weight="0.2"
+                android:id="@+id/client_checkbox"/>
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>

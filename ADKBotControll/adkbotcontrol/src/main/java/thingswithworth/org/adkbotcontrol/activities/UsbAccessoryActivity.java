@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package thingswithworth.org.adkbotcontrol;
+package thingswithworth.org.adkbotcontrol.activities;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+
+import thingswithworth.org.adkbotcontrol.activities.StartActivity;
 
 /* This Activity does nothing but receive USB_DEVICE_ATTACHED events from the
  * USB service and springboards to the main Gallery activity
