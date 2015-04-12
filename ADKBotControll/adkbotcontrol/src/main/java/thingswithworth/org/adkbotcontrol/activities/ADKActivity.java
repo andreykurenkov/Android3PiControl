@@ -36,6 +36,7 @@ import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.widget.SeekBar;
+import android.widget.Toast;
 
 import com.android.future.usb.UsbAccessory;
 import com.android.future.usb.UsbManager;
@@ -180,13 +181,15 @@ public abstract class ADKActivity extends Activity  {
             mOutputStream = new DataOutputStream(new FileOutputStream(fd));
            // Thread thread = new Thread(null, adkComm, "ADK");
            // thread.start();
+            onUSBAccessoryOpen();
             Log.d(TAG, "accessory opened");
         } else {
             Log.d(TAG, "accessory open fail");
         }
     }
 
-    private void closeAccessory() {
+
+    protected void closeAccessory() {
         try {
             if (mFileDescriptor != null) {
                 mFileDescriptor.close();
@@ -205,20 +208,8 @@ public abstract class ADKActivity extends Activity  {
         return val;
     }
 
-
-    Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MESSAGE_SWITCH:
-                    SwitchMsg o = (SwitchMsg) msg.obj;
-                    break;
-
-            }
-        }
-    };
-
     public void sendDriveCommand(char drive, char speed) throws IOException {
+        Log.i(TAG, "Calling sendDriveCommand");
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream stream = new DataOutputStream(bytes);
         stream.writeByte(drive);
@@ -226,9 +217,15 @@ public abstract class ADKActivity extends Activity  {
         if (mOutputStream != null) {
             try {
                 mOutputStream.write(bytes.toByteArray());
+                Toast.makeText(ADKActivity.this, "Byte array", Toast.LENGTH_SHORT).show();
             } catch (IOException e) {
+                Toast.makeText(ADKActivity.this, "Byte array probs", Toast.LENGTH_SHORT).show();
+
                 Log.e(TAG, "write failed", e);
             }
         }
     }
+
+    protected abstract void onUSBAccessoryOpen();
+
 }

@@ -93,10 +93,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 try {
                     if(socket!=null && socket.isConnected()) {
-                        socket.getOutputStream().write("driveCommand:".getBytes());
-                        socket.getOutputStream().write('F');
+                        socket.getOutputStream().write("driveCommand".getBytes());
+                        socket.getOutputStream().write((byte)(250));
+                        socket.getOutputStream().write((byte)('F'));
                         socket.getOutputStream().write(speed);
-                        socket.getOutputStream().write(';');
+                        socket.getOutputStream().write((byte)(252));
+                        socket.getOutputStream().flush();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -107,14 +109,36 @@ public class MainActivity extends Activity {
         leftButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                try {
+                    if(socket!=null && socket.isConnected()) {
+                        socket.getOutputStream().write("driveCommand".getBytes());
+                        socket.getOutputStream().write((byte)(250));
+                        socket.getOutputStream().write((byte)('L'));
+                        socket.getOutputStream().write(speed);
+                        socket.getOutputStream().write((byte)(252));
+                        socket.getOutputStream().flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
         rightButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                try {
+                    if(socket!=null && socket.isConnected()) {
+                        socket.getOutputStream().write("driveCommand".getBytes());
+                        socket.getOutputStream().write((byte)(250));
+                        socket.getOutputStream().write((byte)('R'));
+                        socket.getOutputStream().write(speed);
+                        socket.getOutputStream().write((byte)(252));
+                        socket.getOutputStream().flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -154,11 +178,11 @@ public class MainActivity extends Activity {
 
         @Override
         protected Socket doInBackground(Void... noparams) {
-
             Socket socket = null;
-
             try {
                 socket = new Socket(dstAddress, dstPort);
+                if(!socket.isConnected())
+                    return null;
                 return socket;
             } catch (UnknownHostException e) {
                 e.printStackTrace();
@@ -168,14 +192,6 @@ public class MainActivity extends Activity {
                 e.printStackTrace();
                 Log.wtf("yo",e);
                 response = "IOException: " + e.toString();
-            }finally{
-                if(socket != null){
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
             }
             return null;
         }
@@ -188,7 +204,6 @@ public class MainActivity extends Activity {
                 Toast.makeText(MainActivity.this, "Could not connect...", Toast.LENGTH_SHORT).show();
             }else{
                 Toast.makeText(MainActivity.this, "Connected!", Toast.LENGTH_SHORT).show();
-
             }
 
         }

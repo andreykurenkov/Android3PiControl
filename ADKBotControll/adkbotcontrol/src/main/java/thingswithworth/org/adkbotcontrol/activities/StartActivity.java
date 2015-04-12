@@ -3,6 +3,7 @@ package thingswithworth.org.adkbotcontrol.activities;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
@@ -34,24 +35,25 @@ import thingswithworth.org.adkbotcontrol.comm.GenericCommInterface;
 
 
 public class StartActivity extends ADKActivity {
-    private ServerSocket serverSocket;
+    private static ServerSocket serverSocket;
     private CheckedTextView adkCheckBox, clientCheckBox;
     TextView ipView;
     private static final int SocketServerPORT = 5000;
     GenericCommInterface serverComm;
     Socket socket;
 
-    private final Handler SERVER_HANDLER = new Handler(new Handler.Callback(){
+    private final Handler SERVER_HANDLER = new Handler(Looper.getMainLooper(),new Handler.Callback(){
 
         @Override
         public boolean handleMessage(Message msg) {
             byte[] bytes = msg.getData().getByteArray("data");
             DataInputStream stream = new DataInputStream(new ByteArrayInputStream(bytes));
             try {
-                char dir = stream.readChar();
+                char dir = (char)stream.readByte();
                 byte speed = stream.readByte();
                 char fullSpeed = (char)(speed/100.0f*255.0f);
-                sendDriveCommand(dir,fullSpeed);
+                Toast.makeText(StartActivity.this, "Received message "+dir+" "+fullSpeed, Toast.LENGTH_SHORT).show();
+                sendDriveCommand(dir, fullSpeed);
                 return true;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -71,11 +73,15 @@ public class StartActivity extends ADKActivity {
 
         ipView.setText(getIpAddress().toString());
         try {
-            serverSocket = new ServerSocket(); // <-- create an unbound socket first
-            serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress(SocketServerPORT)); // <-- now bind it
-            ConnectTask task = new ConnectTask();
-            task.execute();
+            if(serverSocket==null) {
+                serverSocket = new ServerSocket(); // <-- create an unbound socket first
+                serverSocket.setReuseAddress(true);
+                serverSocket.bind(new InetSocketAddress(SocketServerPORT)); // <-- now bind it
+                ConnectTask task = new ConnectTask();
+                task.execute();
+            }else{
+                clientCheckBox.setChecked(true);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(StartActivity.this, "Could not open port...", Toast.LENGTH_SHORT).show();
@@ -107,6 +113,16 @@ public class StartActivity extends ADKActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public class ConnectTask extends AsyncTask<Void, Void, Socket> {
         @Override
         protected Socket doInBackground(Void... params) {
@@ -118,7 +134,7 @@ public class StartActivity extends ADKActivity {
                 serverComm.addHandler("driveCommand",SERVER_HANDLER);
                 Thread commThread = new Thread(serverComm,"Server Comm");
                 commThread.start();
-                Log.v("start","connected");
+                Log.v("StartActivity","connected");
                 return socket;
             } catch (IOException e) {
                 Log.wtf("error",e);
@@ -158,4 +174,15 @@ public class StartActivity extends ADKActivity {
         }
         return ip;
     }
+
+    protected void onUSBAccessoryOpen(){
+        Toast.makeText(StartActivity.this, "USB opened", Toast.LENGTH_SHORT).show();
+        adkCheckBox.setChecked(true);
+    }
+
+    protected void closeAccessory() {
+        super.closeAccessory();
+        adkCheckBox.setChecked(false);
+    }
+
 }

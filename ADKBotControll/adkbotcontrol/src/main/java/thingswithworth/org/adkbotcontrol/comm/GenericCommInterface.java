@@ -36,22 +36,23 @@ public class GenericCommInterface implements Runnable{
 
     @Override
     public void run() {
-        boolean stillRunning = true;
         StringBuilder builder = new StringBuilder();
         ArrayList<Byte> bytesList = new ArrayList<Byte>();
         boolean headerGotten = false;
         while(true) {
             try {
-                if(headerGotten && mInputStream.available()>0){
-                    char nextChar =mInputStream.readChar();
-                    if(nextChar!=':') {
+                if(!headerGotten && mInputStream.available()>0){
+                    byte nextByte =mInputStream.readByte();
+                    char nextChar =(char)nextByte;
+                    if(nextByte!=(byte)(250)) {
                         builder.append(nextChar);
                     }else{
                         headerGotten = true;
                     }
-                }else if( mInputStream.available()>0){
+                }else if(headerGotten && mInputStream.available()>0){
                     byte nextByte = mInputStream.readByte();
-                    if(nextByte==Character.LINE_SEPARATOR) {
+                    if(nextByte==(byte)(252)) {
+                        headerGotten = false;
                         byte[] bytes = new byte[bytesList.size()];
                         for(int i=0;i<bytesList.size();i++)
                             bytes[i] = bytesList.get(i);
@@ -64,7 +65,8 @@ public class GenericCommInterface implements Runnable{
                             Bundle bundle = new Bundle();
                             bundle.putByteArray("data",bytes);
                             msg.setData(bundle);
-                            msgHandler.handleMessage(msg);
+                            msgHandler.sendMessage(msg);
+                            Log.i(TAG,"Got full message "+name+" with "+bytes.length+" bytes");
                         }else {
                             //TODO
                         }
@@ -74,10 +76,10 @@ public class GenericCommInterface implements Runnable{
                 }
             } catch (EOFException e) {
                 e.printStackTrace();
-                stillRunning = false;
+                Log.e(TAG,"Exception", e);
             } catch (IOException e) {
                 e.printStackTrace();
-                stillRunning = false;
+                Log.e(TAG,"Exception", e);
             }
         }
     }
