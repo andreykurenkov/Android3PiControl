@@ -39,8 +39,8 @@ const char demo_name_line2[] PROGMEM = "Control";
 const char welcome[] PROGMEM = ">g32>>c32";
 const char go[] PROGMEM = "L16 cdegreg4";
 
-#define rxPin 0  // pin 3 connects to smcSerial TX  (not used in this example)
-#define txPin 1  // pin 4 connects to smcSerial RX
+#define rxPin 0 
+#define txPin 1  
 SoftwareSerial smcSerial = SoftwareSerial(rxPin, txPin);
 char buffer[100];
 unsigned char read_index = 0;
@@ -134,14 +134,13 @@ void setup()
 
   OrangutanLCD::clear();
 
-  OrangutanLCD::print("Go!");	
+  OrangutanLCD::print("Ready");	
   
-  smcSerial.begin(115200);
-   
+  smcSerial.begin(9600);
+
   OrangutanMotors::setSpeeds(0,0);
 }
-
-
+char mode = 'S';
 // The main function.  This function is repeatedly called by
 // the Arduino framework.
 void loop()
@@ -149,14 +148,30 @@ void loop()
    if (smcSerial.available()>2){
       char command = (char) readByte();
       byte speedByte = readByte();
-      if(command=='F'){
+      if((command=='S' && speedByte==0) || (mode=='S' && command!='S')){
+        mode = command;
+        if(speedByte==0)
+            OrangutanMotors::setSpeeds(0,0);
+      }
+      if(mode=='F'){
+          OrangutanLCD::clear();
+          OrangutanLCD::print("Forward!");	
           OrangutanMotors::setSpeeds(speedByte,speedByte);
       }
-      if(command=='R'){
+      if(mode=='R'){
+          OrangutanLCD::clear();
+          OrangutanLCD::print("Right!");	
           OrangutanMotors::setSpeeds(-speedByte,speedByte);
       }
-      if(command=='L'){
+      if(mode=='L'){
+          OrangutanLCD::clear();
+          OrangutanLCD::print("Left!");	
           OrangutanMotors::setSpeeds(speedByte,-speedByte);
+      }
+      if(mode=='B'){
+          OrangutanLCD::clear();
+          OrangutanLCD::print("Back!");	
+          OrangutanMotors::setSpeeds(-speedByte,-speedByte);
       }
    }
 }

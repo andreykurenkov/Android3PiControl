@@ -1,21 +1,42 @@
 package thingswithworth.org.adkbotcontrol.activities;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.hardware.Camera;
+import android.media.CamcorderProfile;
+import android.media.MediaRecorder;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.ParcelFileDescriptor;
+import android.os.StrictMode;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.widget.CheckedTextView;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.apache.http.conn.util.InetAddressUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,7 +47,10 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import thingswithworth.org.adkbotcontrol.R;
@@ -34,13 +58,16 @@ import thingswithworth.org.adkbotcontrol.activities.ADKActivity;
 import thingswithworth.org.adkbotcontrol.comm.GenericCommInterface;
 
 
-public class StartActivity extends ADKActivity {
+public class StartActivity extends ADKActivity implements SurfaceHolder.Callback, MediaRecorder.OnInfoListener {
     private static ServerSocket serverSocket;
     private CheckedTextView adkCheckBox, clientCheckBox;
     TextView ipView;
     private static final int SocketServerPORT = 5000;
+    private Camera mCamera;
+    private SurfaceView mPreview;
     GenericCommInterface serverComm;
     Socket socket;
+    private SurfaceHolder mHolder;
 
     private final Handler SERVER_HANDLER = new Handler(Looper.getMainLooper(),new Handler.Callback(){
 
@@ -70,8 +97,16 @@ public class StartActivity extends ADKActivity {
         ipView = (TextView) this.findViewById(R.id.ip_text_content);
         adkCheckBox = (CheckedTextView) this.findViewById(R.id.adk_checkbox);
         clientCheckBox = (CheckedTextView) this.findViewById(R.id.client_checkbox);
+        mPreview = (SurfaceView) this.findViewById(R.id.camera_surface);
+        WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
+        String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+        ipView.setText(ip);
+        mCamera = getCameraInstance();
+        mHolder = mPreview.getHolder();
+        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        mHolder = mPreview.getHolder();
+        mHolder.addCallback(this);
 
-        ipView.setText(getIpAddress().toString());
         try {
             if(serverSocket==null) {
                 serverSocket = new ServerSocket(); // <-- create an unbound socket first
@@ -80,14 +115,14 @@ public class StartActivity extends ADKActivity {
                 ConnectTask task = new ConnectTask();
                 task.execute();
             }else{
-                clientCheckBox.setChecked(true);
+                if(!serverSocket.isClosed())
+                    clientCheckBox.setChecked(true);
             }
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(StartActivity.this, "Could not open port...", Toast.LENGTH_SHORT).show();
             Log.wtf("Oh no",e);
         }
-
     }
 
 
@@ -118,9 +153,39 @@ public class StartActivity extends ADKActivity {
         super.onDestroy();
         try {
             serverSocket.close();
+            mCamera.unlock();
+            mCamera.stopPreview();
+            mCamera.release();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        try {
+            mCamera.setPreviewDisplay(holder);
+            mCamera.setDisplayOrientation(90);
+            mCamera.startPreview();
+        } catch (IOException e) {
+            Log.d("StartActivity", "Error setting camera preview: " + e.getMessage());
+        }catch (NullPointerException e) {
+            Log.d("StartActivity", "No camera!");
+        }
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+
+    }
+
+    @Override
+    public void onInfo(MediaRecorder mr, int what, int extra) {
+        Log.d("StartActivity","Whatup");
     }
 
     public class ConnectTask extends AsyncTask<Void, Void, Socket> {
@@ -135,6 +200,9 @@ public class StartActivity extends ADKActivity {
                 Thread commThread = new Thread(serverComm,"Server Comm");
                 commThread.start();
                 Log.v("StartActivity","connected");
+                //ParcelFileDescriptor pfd = ParcelFileDescriptor.fromSocket(socket);
+                //pfd.getFileDescriptor().sync();
+                //mMediaRecorder.setOutputFile(pfd.getFileDescriptor());
                 return socket;
             } catch (IOException e) {
                 Log.wtf("error",e);
@@ -148,31 +216,25 @@ public class StartActivity extends ADKActivity {
         }
     }
 
-    private String getIpAddress() {
-        String ip = "";
+    private Camera getCameraInstance() {
+
         try {
-            Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
-                    .getNetworkInterfaces();
-            while (enumNetworkInterfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = enumNetworkInterfaces
-                        .nextElement();
-                Enumeration<InetAddress> enumInetAddress = networkInterface
-                        .getInetAddresses();
-                while (enumInetAddress.hasMoreElements()) {
-                    InetAddress inetAddress = enumInetAddress.nextElement();
-
-                    if (inetAddress.isSiteLocalAddress()) {
-                        ip += inetAddress.getHostAddress() + "\n";
-                    }
-
-                }
-
-            }
-
-        } catch (SocketException e) {
+            releaseCameraAndPreview();
+            mCamera = Camera.open();
+            return mCamera;
+        } catch (Exception e) {
+            Log.e(getString(R.string.app_name), "failed to open Camera");
             e.printStackTrace();
         }
-        return ip;
+
+        return null;
+    }
+
+    private void releaseCameraAndPreview() {
+        if (mCamera != null) {
+            mCamera.release();
+            mCamera = null;
+        }
     }
 
     protected void onUSBAccessoryOpen(){
@@ -184,5 +246,6 @@ public class StartActivity extends ADKActivity {
         super.closeAccessory();
         adkCheckBox.setChecked(false);
     }
+
 
 }

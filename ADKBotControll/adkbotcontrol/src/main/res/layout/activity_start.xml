@@ -80,5 +80,12 @@
                 android:layout_weight="0.2"
                 android:id="@+id/client_checkbox"/>
         </LinearLayout>
+
+        <SurfaceView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/camera_surface"/>
     </LinearLayout>
+
+
 </RelativeLayout>

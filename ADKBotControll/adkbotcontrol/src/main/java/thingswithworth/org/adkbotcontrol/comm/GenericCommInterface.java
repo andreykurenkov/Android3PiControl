@@ -77,9 +77,11 @@ public class GenericCommInterface implements Runnable{
             } catch (EOFException e) {
                 e.printStackTrace();
                 Log.e(TAG,"Exception", e);
+                break;
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.e(TAG,"Exception", e);
+                break;
             }
         }
     }

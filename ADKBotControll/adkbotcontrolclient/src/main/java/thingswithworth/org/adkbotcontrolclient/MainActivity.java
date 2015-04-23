@@ -2,7 +2,9 @@ package thingswithworth.org.adkbotcontrolclient;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.hardware.Camera;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,6 +15,9 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -31,16 +36,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements SurfaceHolder.Callback, MediaPlayer.OnErrorListener, MediaPlayer.OnPreparedListener {
 
     EditText editTextAddress;
     Button connectButton;
-    ImageButton forwardButton, leftButton, rightButton;
+    ImageButton forwardButton, leftButton, rightButton, backButton;
     SeekBar speedBar;
     byte speed;
     final String IP_ADDRESS_REGEX = "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$";
     final int PORT = 5000;
+    private SurfaceView mPreview;
     private MediaPlayer mMediaPlayer;
+    private SurfaceHolder holder;
     Socket socket;
 
     @Override
@@ -48,8 +55,16 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         editTextAddress = (EditText)findViewById(R.id.address);
+        editTextAddress.setText("128.61.123.115");
         connectButton = (Button)findViewById(R.id.connect);
-        connectButton.setEnabled(false);
+        connectButton.setEnabled(true);
+        mPreview =  (SurfaceView)findViewById(R.id.camera_surface);
+        mMediaPlayer = new MediaPlayer();
+        mMediaPlayer.setOnErrorListener(this);
+        mMediaPlayer.setOnPreparedListener(this);
+        holder = mPreview.getHolder();
+        holder.addCallback(this);
+
         editTextAddress.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -81,69 +96,82 @@ public class MainActivity extends Activity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
+                try {
+                    socket.getOutputStream().write("driveCommand".getBytes());
+                    socket.getOutputStream().write((byte) (250));
+                    socket.getOutputStream().write((byte) ('S'));
+                    socket.getOutputStream().write(speed);
+                    socket.getOutputStream().write((byte) (252));
+                    socket.getOutputStream().flush();
+                }catch(Exception e){
+                    Log.wtf("Comm",e);
+                }
 
             }
         });
         forwardButton = (ImageButton) findViewById(R.id.buttonForward);
         leftButton = (ImageButton) findViewById(R.id.buttonLeft);
         rightButton = (ImageButton) findViewById(R.id.buttonRight);
+        backButton = (ImageButton) findViewById(R.id.buttonBack);
 
-        forwardButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    if(socket!=null && socket.isConnected()) {
-                        socket.getOutputStream().write("driveCommand".getBytes());
-                        socket.getOutputStream().write((byte)(250));
-                        socket.getOutputStream().write((byte)('F'));
-                        socket.getOutputStream().write(speed);
-                        socket.getOutputStream().write((byte)(252));
-                        socket.getOutputStream().flush();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        leftButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    if(socket!=null && socket.isConnected()) {
-                        socket.getOutputStream().write("driveCommand".getBytes());
-                        socket.getOutputStream().write((byte)(250));
-                        socket.getOutputStream().write((byte)('L'));
-                        socket.getOutputStream().write(speed);
-                        socket.getOutputStream().write((byte)(252));
-                        socket.getOutputStream().flush();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        rightButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    if(socket!=null && socket.isConnected()) {
-                        socket.getOutputStream().write("driveCommand".getBytes());
-                        socket.getOutputStream().write((byte)(250));
-                        socket.getOutputStream().write((byte)('R'));
-                        socket.getOutputStream().write(speed);
-                        socket.getOutputStream().write((byte)(252));
-                        socket.getOutputStream().flush();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-
+        forwardButton.setOnTouchListener(new ControlTouchListener('F'));
+        leftButton.setOnTouchListener(new ControlTouchListener('L'));
+        rightButton.setOnTouchListener(new ControlTouchListener('R'));
+        backButton.setOnTouchListener(new ControlTouchListener('B'));
     }
+
+
+    private class ControlTouchListener implements View.OnTouchListener {
+        final char DIR;
+
+        public ControlTouchListener(char where){
+            DIR = where;
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            try {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_UP:
+                        socket.getOutputStream().write("driveCommand".getBytes());
+                        socket.getOutputStream().write((byte) (250));
+                        socket.getOutputStream().write((byte) (DIR));
+                        socket.getOutputStream().write(speed);
+                        socket.getOutputStream().write((byte) (252));
+                        socket.getOutputStream().flush();
+                        return true; // if you want to handle the touch event
+                    case MotionEvent.ACTION_DOWN:
+                        socket.getOutputStream().write("driveCommand".getBytes());
+                        socket.getOutputStream().write((byte) (250));
+                        socket.getOutputStream().write((byte) ('S'));
+                        socket.getOutputStream().write(0);
+                        socket.getOutputStream().write((byte) (252));
+                        socket.getOutputStream().flush();
+                        return true; // if you want to handle the touch event
+                }
+            } catch (Exception e) {
+                Log.wtf("Comm", e);
+            }
+            return false;
+        }
+    }
+
+
+    public void surfaceCreated(SurfaceHolder holder)
+    {
+        mMediaPlayer.setDisplay(holder);
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        //:(
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+           //:(
+    }
+
     public void onConnect(View view) {
         final ConnectTask connectTask = new ConnectTask(
                 editTextAddress.getText().toString(),
@@ -156,13 +184,16 @@ public class MainActivity extends Activity {
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
-        /*
-         ParcelFileDescriptor pfd = ParcelFileDescriptor.fromSocket(socket);
-                mMediaPlayer = new MediaPlayer();
-                mMediaPlayer.setDataSource(pfd.getFileDescriptor());
-                mMediaPlayer.prepare();
-                mMediaPlayer.start();
-         */
+    }
+
+    @Override
+    public boolean onError(MediaPlayer mp, int what, int extra) {
+        return false;
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer mp) {
+        mp.start();
     }
 
     public class ConnectTask extends AsyncTask<Void, Void, Socket> {

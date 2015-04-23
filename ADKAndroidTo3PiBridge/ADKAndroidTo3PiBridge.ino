@@ -16,8 +16,8 @@ void setup()
 {
 	Serial.begin(115200);
 	Serial.print("\r\nStart");
-        Serial1.begin(115200);
-        delay(100);
+        Serial1.begin(9600);
+        delay(500);
 	acc.powerOn();
 }
 
@@ -31,15 +31,10 @@ void loop()
 
 	if (acc.isConnected()) {
 		int len = acc.read(msg, sizeof(msg), 2);
-		int i;
-		byte b;
-		uint16_t val;
-		int x, y;
-		char c0;
 		if (len > 0) {
                     Serial1.write(msg, 2);
                 }
-	} 
-	delay(10);
+                
+	}
 }
 
