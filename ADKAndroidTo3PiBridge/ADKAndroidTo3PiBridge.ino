@@ -26,7 +26,7 @@ void loop()
 	byte err;
 	byte idle;
 	static byte count = 0;
-	byte msg[3];
+	byte msg[2];
 	long touchcount;
 
 	if (acc.isConnected()) {

@@ -145,7 +145,7 @@ char mode = 'S';
 // the Arduino framework.
 void loop()
 {
-   if (smcSerial.available()>2){
+   if (smcSerial.available()>=2){
       char command = (char) readByte();
       byte speedByte = readByte();
       if((command=='S' && speedByte==0) || (mode=='S' && command!='S')){

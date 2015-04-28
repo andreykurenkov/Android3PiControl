@@ -135,16 +135,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback, Me
                     case MotionEvent.ACTION_UP:
                         socket.getOutputStream().write("driveCommand".getBytes());
                         socket.getOutputStream().write((byte) (250));
-                        socket.getOutputStream().write((byte) (DIR));
-                        socket.getOutputStream().write(speed);
+                        socket.getOutputStream().write((byte) ('S'));
+                        socket.getOutputStream().write(0);
                         socket.getOutputStream().write((byte) (252));
                         socket.getOutputStream().flush();
                         return true; // if you want to handle the touch event
                     case MotionEvent.ACTION_DOWN:
                         socket.getOutputStream().write("driveCommand".getBytes());
                         socket.getOutputStream().write((byte) (250));
-                        socket.getOutputStream().write((byte) ('S'));
-                        socket.getOutputStream().write(0);
+                        socket.getOutputStream().write((byte) (DIR));
+                        socket.getOutputStream().write(speed);
                         socket.getOutputStream().write((byte) (252));
                         socket.getOutputStream().flush();
                         return true; // if you want to handle the touch event
